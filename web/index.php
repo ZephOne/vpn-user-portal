@@ -53,6 +53,7 @@ use LC\Portal\Tpl;
 use LC\Portal\TwoFactorEnrollModule;
 use LC\Portal\UpdateSessionInfoHook;
 use LC\Portal\VpnPortalModule;
+use LC\Portal\WgModule;
 
 $logger = new Logger('vpn-user-portal');
 
@@ -315,6 +316,9 @@ try {
         $clientFetcher
     );
     $service->addModule($vpnPortalModule);
+
+    $wgModule = new WgModule($tpl, new CurlHttpClient());
+    $service->addModule($wgModule);
 
     $adminPortalModule = new AdminPortalModule(
         $tpl,

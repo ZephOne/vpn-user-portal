@@ -1,5 +1,5 @@
 <ul>
-<?php foreach (['home' => $this->t('Home'), 'configurations' => $this->t('Configurations'), 'account' => $this->t('Account'), 'documentation' => $this->t('Documentation')] as $menuKey => $menuText): ?>
+<?php foreach (['home' => $this->t('Home'), 'configurations' => $this->t('Configurations'), 'wg' => $this->t('WireGuard'), 'account' => $this->t('Account'), 'documentation' => $this->t('Documentation')] as $menuKey => $menuText): ?>
 <?php if ($menuKey === $activeItem): ?>
     <li class="active">
 <?php else: ?>
