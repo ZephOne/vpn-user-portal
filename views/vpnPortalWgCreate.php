@@ -1,7 +1,7 @@
 <?php $this->layout('base', ['activeItem' => 'wireguard', 'pageTitle' => $this->t('WireGuard')]); ?>
 <?php $this->start('content'); ?>
     <h2>Configuration</h2>
-    <p class="plain">
+    <p>
 Scan the QR code on your mobile device, or copy&amp;paste this configuration to
 your WireGuard client.
     </p>

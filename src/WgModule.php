@@ -88,10 +88,10 @@ class WgModule implements ServiceModuleInterface
                 }
 
                 // XXX do not overflow, max 254
-                $ipFour = '10.10.10.'.($minIndex + 1).'/32';
+                $ipFour = '10.10.10.'.($minIndex + 1);
                 // XXX convert to hex
 //                $ipSix = 'fd00:1234:1234:1234::'.dechex($minIndex + 1).'/128';
-                $ipSix = 'fd00:1234:1234:1234::'.($minIndex + 1).'/128';
+                $ipSix = 'fd00:1234:1234:1234::'.($minIndex + 1);
 
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::getPublicKey($privateKey);
@@ -112,7 +112,7 @@ Address = $ipFour/24, $ipSix/64
 DNS = $dnsIpList
 EOF;
                 // make sure IP is still available
-                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour), 'AllowedIPs='.urlencode($ipSix)]);
+                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour.'/32'), 'AllowedIPs='.urlencode($ipSix.'/128')]);
                 $httpResponse = $this->httpClient->postRaw(
                     $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
                     [],
