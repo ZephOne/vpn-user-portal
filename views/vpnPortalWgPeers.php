@@ -21,7 +21,7 @@
     </fieldset>
 </form>
 
-<?php if (array_key_exists('Peers', $wgInfo)): ?>
+<?php if (0 !== count($wgPeers)): ?>
     <h3>List of Peers</h3>
     <table class="tbl">
         <thead>
@@ -31,7 +31,7 @@
             </tr>
         </thead>
         <tbody>
-    <?php foreach ($wgInfo['Peers'] as $peerInfo): ?>
+    <?php foreach ($wgPeers as $peerInfo): ?>
         <tr>
             <td><?= $this->e($peerInfo['PublicKey']); ?></td>
             <td>

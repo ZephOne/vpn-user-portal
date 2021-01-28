@@ -58,6 +58,7 @@ class WgModule implements ServiceModuleInterface
                             if (false !== strpos($allowedIp, '.')) {
                                 // IPv4
                                 list(, , , $i) = explode('.', $allowedIp);
+                                $i = (int) $i;
                                 if ($i > $minIndex) {
                                     ++$minIndex;
                                 }
