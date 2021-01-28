@@ -11,7 +11,13 @@
     <?php foreach ($peerList as $peerItem): ?>
         <tr>
             <td><?= $this->e($peerItem['PublicKey']); ?></td>
-            <td><?= $this->e($peerItem['IPv4']); ?></td>
+            <td>
+                <ul>
+<?php foreach ($peerItem['AllowedIPs'] as $allowedIp): ?>
+                    <li><?= $this->e($allowedIp); ?></li>
+<?php endforeach; ?>
+                </ul>
+            </td>
         </tr>
     <?php endforeach; ?>
         </tbody>
