@@ -71,17 +71,31 @@ class WgModule implements ServiceModuleInterface
 
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::getPublicKey($privateKey);
+                $wgHost = $request->getServerName();
+                $serverPublicKey = $wgInfo['PublicKey'];
+                $listenPort = $wgInfo['ListenPort'];
+
+                $wgConfig = <<< EOF
+[Peer]
+PublicKey = $serverPublicKey
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = $wgHost:$listenPort
+
+[Interface]
+PrivateKey = $privateKey
+Address = $ipFour/24, $ipSix/64
+DNS = 9.9.9.9, 2620:fe::fe
+EOF;
 
                 return new HtmlResponse(
                     $this->tpl->render(
                         'vpnPortalWgPeers',
                         [
+                            'wgConfig' => $wgConfig,
                             'pubKey' => $publicKey,
-                            'secKey' => $privateKey,
                             'ipFour' => $ipFour,
                             'ipSix' => $ipSix,
-                            'wgHost' => $request->getServerName(),
-                            'wgInfo' => $wgInfo,
+                            'wgPeers' => \array_key_exists('Peers', $wgInfo) ? $wgInfo['Peers'] : [],
                         ]
                     )
                 );
@@ -132,7 +146,7 @@ class WgModule implements ServiceModuleInterface
     private static function getPublicKey($privateKey)
     {
         ob_start();
-        passthru("echo $privateKey | /usr/bin/wg genkey");
+        passthru("echo $privateKey | /usr/bin/wg pubkey");
 
         return trim(ob_get_clean());
     }

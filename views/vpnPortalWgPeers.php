@@ -1,24 +1,16 @@
 <?php $this->layout('base', ['activeItem' => 'wg', 'pageTitle' => $this->t('WireGuard')]); ?>
 <?php $this->start('content'); ?>
     <h3>New Peer</h3>
-    <p>Copy &amp; paste this configuration in your WireGuard client and click
-    the <em>Register Me!</em> button to "claim" this configuration.
+    <p>Copy &amp; paste this configuration in your WireGuard client or scan the
+    QR code with your mobile device and click the <strong>Register Me!</strong>
+    button to "claim" this configuration.
     </p>
-
-<pre>
-[Peer]
-PublicKey = <?=$this->e($wgInfo['PublicKey']); ?>
-
-AllowedIPs = 0.0.0.0/32, ::/0
-Endpoint = <?=$this->e($wgHost); ?>:<?=$this->e($wgInfo['ListenPort']); ?>
-
-
-[Interface]
-PrivateKey = <?=$this->e($secKey); ?>
-
-Address = <?=$this->e($ipFour); ?>/24, <?=$this->e($ipSix); ?>/64
-DNS = 9.9.9.9, 2620:fe::fe
-</pre>
+<p>
+<blockquote>
+<pre><?=$this->e($wgConfig); ?></pre>
+</blockquote>
+</p>
+<img src="qr?qr_text=<?=urlencode($this->e($wgConfig)); ?>">
 
 <form class="frm" method="post" action="wg_add_peer">
     <input type="hidden" name="PublicKey" value="<?=$this->e($pubKey); ?>">
@@ -28,8 +20,6 @@ DNS = 9.9.9.9, 2620:fe::fe
         <button type="submit">Register Me!</button>
     </fieldset>
 </form>
-
-
 
 <?php if (array_key_exists('Peers', $wgInfo)): ?>
     <h3>List of Peers</h3>
