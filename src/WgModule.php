@@ -48,7 +48,7 @@ class WgModule implements ServiceModuleInterface
              * @return \LC\Common\Http\Response
              */
             function (Request $request, array $hookData) {
-                $httpResponse = $this->httpClient->get('http://localhost:8080/info', [], []);
+                $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
 
                 $wgInfo = Json::decode($httpResponse->getBody());
 
@@ -116,16 +116,18 @@ EOF;
              * @return \LC\Common\Http\Response
              */
             function (Request $request, array $hookData) {
+                // XXX validate input
                 $publicKey = $request->requirePostParameter('PublicKey');
                 $ipFour = $request->requirePostParameter('IPv4').'/32';
                 $ipSix = $request->requirePostParameter('IPv6').'/128';
 
+                // make sure IP is still available
                 $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour), 'AllowedIPs='.urlencode($ipSix)]);
 
                 // parse the form fields
                 // XXX make sure content-type is correct
                 $httpResponse = $this->httpClient->postRaw(
-                    'http://localhost:8080/add_peer',
+                    $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
                     [],
                     $rawPostData
                 );
