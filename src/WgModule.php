@@ -10,6 +10,7 @@
 namespace LC\Portal;
 
 use LC\Common\Http\HtmlResponse;
+use LC\Common\Http\RedirectResponse;
 use LC\Common\Http\Request;
 use LC\Common\Http\Service;
 use LC\Common\Http\ServiceModuleInterface;
@@ -52,6 +53,33 @@ class WgModule implements ServiceModuleInterface
                         ]
                     )
                 );
+            }
+        );
+
+        $service->post(
+            '/wg_add_peer',
+            /**
+             * @return \LC\Common\Http\Response
+             */
+            function (Request $request, array $hookData) {
+                $publicKey = $request->requirePostParameter('PublicKey');
+                $ipFour = $request->requirePostParameter('IPv4').'/32';
+                $ipSix = $request->requirePostParameter('IPv6').'/128';
+
+                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour), 'AllowedIPs='.urlencode($ipSix)]);
+
+                // parse the form fields
+                // XXX make sure content-type is correct
+                $httpResponse = $this->httpClient->postRaw(
+                    'http://localhost:8080/register',
+                    [],
+                    $rawPostData
+                );
+
+                var_dump($httpResponse);
+                exit();
+
+                return new RedirectResponse($request->getRootUri().'wg');
             }
         );
     }
