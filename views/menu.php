@@ -3,7 +3,7 @@ $menuItems = [];
 $menuItems['home'] = $this->t('Home');
 $menuItems['configurations'] = $this->t('Configurations');
 if ($enableWg) {
-    $menuItems['wg'] = $this->t('WireGuard');
+    $menuItems['wireguard'] = $this->t('WireGuard');
 }
 $menuItems['account'] = $this->t('Account');
 $menuItems['documentation'] = $this->t('Documentation');

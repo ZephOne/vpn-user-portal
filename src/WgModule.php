@@ -11,7 +11,6 @@ namespace LC\Portal;
 
 use LC\Common\Config;
 use LC\Common\Http\HtmlResponse;
-use LC\Common\Http\RedirectResponse;
 use LC\Common\Http\Request;
 use LC\Common\Http\Service;
 use LC\Common\Http\ServiceModuleInterface;
@@ -43,17 +42,33 @@ class WgModule implements ServiceModuleInterface
     public function init(Service $service)
     {
         $service->get(
-            '/wg',
+            '/wireguard',
             /**
              * @return \LC\Common\Http\Response
              */
             function (Request $request, array $hookData) {
                 $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
-
                 $wgInfo = Json::decode($httpResponse->getBody());
 
-                // figure out if we have any peers configured, find a free IP
-                // address...
+                return new HtmlResponse(
+                    $this->tpl->render(
+                        'vpnPortalWg',
+                        [
+                            'wgPeers' => \array_key_exists('Peers', $wgInfo) ? $wgInfo['Peers'] : [],
+                        ]
+                    )
+                );
+            }
+        );
+
+        $service->post(
+            '/wireguard',
+            /**
+             * @return \LC\Common\Http\Response
+             */
+            function (Request $request, array $hookData) {
+                $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
+                $wgInfo = Json::decode($httpResponse->getBody());
 
                 $minIndex = 1;
                 if (\array_key_exists('Peers', $wgInfo)) {
@@ -65,24 +80,26 @@ class WgModule implements ServiceModuleInterface
                                 list(, , , $i) = explode('.', $allowedIp);
                                 $i = (int) $i;
                                 if ($i > $minIndex) {
-                                    ++$minIndex;
+                                    $minIndex = $i;
                                 }
                             }
                         }
                     }
                 }
 
-                $ipFour = '10.10.10.'.($i + 1);
-                $ipSix = 'fd00:1234:1234:1234::'.($i + 1);
+                // XXX do not overflow, max 254
+                $ipFour = '10.10.10.'.($minIndex + 1).'/32';
+                // XXX convert to hex
+//                $ipSix = 'fd00:1234:1234:1234::'.dechex($minIndex + 1).'/128';
+                $ipSix = 'fd00:1234:1234:1234::'.($minIndex + 1).'/128';
 
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::getPublicKey($privateKey);
                 $wgHost = $request->getServerName();
                 $serverPublicKey = $wgInfo['PublicKey'];
                 $listenPort = $wgInfo['ListenPort'];
+                // XXX make DNS optional
                 $dnsIpList = implode(', ', $this->config->requireArray('dns', ['9.9.9.9', '2620:fe::fe']));
-
-                // XXX make "dns" optional
                 $wgConfig = <<< EOF
 [Peer]
 PublicKey = $serverPublicKey
@@ -94,45 +111,22 @@ PrivateKey = $privateKey
 Address = $ipFour/24, $ipSix/64
 DNS = $dnsIpList
 EOF;
-
-                return new HtmlResponse(
-                    $this->tpl->render(
-                        'vpnPortalWgPeers',
-                        [
-                            'wgConfig' => $wgConfig,
-                            'pubKey' => $publicKey,
-                            'ipFour' => $ipFour,
-                            'ipSix' => $ipSix,
-                            'wgPeers' => \array_key_exists('Peers', $wgInfo) ? $wgInfo['Peers'] : [],
-                        ]
-                    )
-                );
-            }
-        );
-
-        $service->post(
-            '/wg_add_peer',
-            /**
-             * @return \LC\Common\Http\Response
-             */
-            function (Request $request, array $hookData) {
-                // XXX validate input
-                $publicKey = $request->requirePostParameter('PublicKey');
-                $ipFour = $request->requirePostParameter('IPv4').'/32';
-                $ipSix = $request->requirePostParameter('IPv6').'/128';
-
                 // make sure IP is still available
                 $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour), 'AllowedIPs='.urlencode($ipSix)]);
-
-                // parse the form fields
-                // XXX make sure content-type is correct
                 $httpResponse = $this->httpClient->postRaw(
                     $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
                     [],
                     $rawPostData
                 );
 
-                return new RedirectResponse($request->getRootUri().'wg');
+                return new HtmlResponse(
+                    $this->tpl->render(
+                        'vpnPortalWgCreate',
+                        [
+                            'wgConfig' => $wgConfig,
+                        ]
+                    )
+                );
             }
         );
     }
