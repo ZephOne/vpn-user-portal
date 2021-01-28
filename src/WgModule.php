@@ -90,8 +90,7 @@ class WgModule implements ServiceModuleInterface
                 // XXX do not overflow, max 254
                 $ipFour = '10.10.10.'.($minIndex + 1);
                 // XXX convert to hex
-//                $ipSix = 'fd00:1234:1234:1234::'.dechex($minIndex + 1).'/128';
-                $ipSix = 'fd00:1234:1234:1234::'.($minIndex + 1);
+                $ipSix = 'fd00:1234:1234:1234::'.dechex($minIndex + 1);
 
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::getPublicKey($privateKey);
