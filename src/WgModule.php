@@ -9,6 +9,7 @@
 
 namespace LC\Portal;
 
+use LC\Common\Config;
 use LC\Common\Http\HtmlResponse;
 use LC\Common\Http\RedirectResponse;
 use LC\Common\Http\Request;
@@ -20,14 +21,18 @@ use LC\Common\TplInterface;
 
 class WgModule implements ServiceModuleInterface
 {
+    /** @var \LC\Common\Config */
+    private $config;
+
     /** @var \LC\Common\TplInterface */
     private $tpl;
 
     /** @var \LC\Common\HttpClient\HttpClientInterface */
     private $httpClient;
 
-    public function __construct(TplInterface $tpl, HttpClientInterface $httpClient)
+    public function __construct(Config $config, TplInterface $tpl, HttpClientInterface $httpClient)
     {
+        $this->config = $config;
         $this->tpl = $tpl;
         $this->httpClient = $httpClient;
     }
@@ -75,7 +80,9 @@ class WgModule implements ServiceModuleInterface
                 $wgHost = $request->getServerName();
                 $serverPublicKey = $wgInfo['PublicKey'];
                 $listenPort = $wgInfo['ListenPort'];
+                $dnsIpList = implode(', ', $this->config->requireArray('dns', ['9.9.9.9', '2620:fe::fe']));
 
+                // XXX make "dns" optional
                 $wgConfig = <<< EOF
 [Peer]
 PublicKey = $serverPublicKey
@@ -85,7 +92,7 @@ Endpoint = $wgHost:$listenPort
 [Interface]
 PrivateKey = $privateKey
 Address = $ipFour/24, $ipSix/64
-DNS = 9.9.9.9, 2620:fe::fe
+DNS = $dnsIpList
 EOF;
 
                 return new HtmlResponse(
