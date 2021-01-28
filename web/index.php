@@ -317,8 +317,13 @@ try {
     );
     $service->addModule($vpnPortalModule);
 
-    $wgModule = new WgModule($tpl, new CurlHttpClient());
-    $service->addModule($wgModule);
+    if ($config->requireBool('enableWg', false)) {
+        $tpl->addDefault(
+            ['enableWg' => true]
+        );
+        $wgModule = new WgModule($tpl, new CurlHttpClient());
+        $service->addModule($wgModule);
+    }
 
     $adminPortalModule = new AdminPortalModule(
         $tpl,

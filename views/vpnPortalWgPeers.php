@@ -1,16 +1,18 @@
 <?php $this->layout('base', ['activeItem' => 'wg', 'pageTitle' => $this->t('WireGuard')]); ?>
 <?php $this->start('content'); ?>
-    <h3>New Peer</h3>
-    <p>Copy &amp; paste this configuration in your WireGuard client or scan the
-    QR code with your mobile device and click the <strong>Register Me!</strong>
-    button to "claim" this configuration.
+    <h3>New Connection</h3>
+    <p>
+Copy &amp; paste this configuration in your WireGuard client or scan the QR
+code with your mobile device and click the <strong>Register Me!</strong> button
+to "claim" this configuration.
     </p>
-<p>
 <blockquote>
 <pre><?=$this->e($wgConfig); ?></pre>
 </blockquote>
+
+<p>
+    <img src="qr?qr_text=<?=urlencode($this->e($wgConfig)); ?>">
 </p>
-<img src="qr?qr_text=<?=urlencode($this->e($wgConfig)); ?>">
 
 <form class="frm" method="post" action="wg_add_peer">
     <input type="hidden" name="PublicKey" value="<?=$this->e($pubKey); ?>">
@@ -20,7 +22,7 @@
         <button type="submit">Register Me!</button>
     </fieldset>
 </form>
-
+<!--
 <?php if (0 !== count($wgPeers)): ?>
     <h3>List of Peers</h3>
     <table class="tbl">
@@ -46,4 +48,5 @@
         </tbody>
     </table>
 <?php endif; ?>
+-->
 <?php $this->stop('content'); ?>
