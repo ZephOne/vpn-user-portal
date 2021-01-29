@@ -13,7 +13,7 @@
         <tr>
             <th><?= $this->t('Public Key'); ?></th>
             <th><?= $this->t('IP Address'); ?></th>
-            <th><?= $this->t('Created At'); ?>(<?=$this->e(date('T')); ?>)</th>
+            <th><?= $this->t('Created At'); ?> (<?=$this->e(date('T')); ?>)</th>
             <th><?= $this->t('Actions'); ?></th>
         </tr>
     </thead>
