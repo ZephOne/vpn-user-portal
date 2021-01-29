@@ -52,7 +52,10 @@ class VpnApiWgModule implements ServiceModuleInterface
              * @return Response
              */
             function (Request $request, array $hookData) {
-                return new Response(204);
+                $response = new Response(200);
+                $response->setBody('y');
+
+                return $response;
             }
         );
 
