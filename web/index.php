@@ -321,7 +321,7 @@ try {
         $tpl->addDefault(
             ['enableWg' => true]
         );
-        $wgModule = new WgModule($config->s('WgConfig'), $tpl, new CurlHttpClient());
+        $wgModule = new WgModule($config->s('WgConfig'), $storage, $tpl, new CurlHttpClient());
         $service->addModule($wgModule);
     }
 

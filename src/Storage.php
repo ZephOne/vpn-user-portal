@@ -19,7 +19,7 @@ use PDO;
 
 class Storage implements CredentialValidatorInterface, StorageInterface
 {
-    const CURRENT_SCHEMA_VERSION = '2019032701';
+    const CURRENT_SCHEMA_VERSION = '2021012901';
 
     /** @var \PDO */
     private $db;
@@ -264,6 +264,85 @@ class Storage implements CredentialValidatorInterface, StorageInterface
 
         $stmt->bindValue(':auth_key', $authKey, PDO::PARAM_STR);
         $stmt->execute();
+    }
+
+    /**
+     * @param string $userId
+     * @param string $publicKey
+     *
+     * @return void
+     */
+    public function wgAddPeer($userId, $publicKey, DateTime $createdAt)
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO wg_peers (
+                user_id,
+                public_key,
+                created_at
+             )
+             VALUES(
+                :user_id,
+                :public_key,
+                :created_at
+             )'
+        );
+
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
+        $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
+        $stmt->bindValue(':created_at', $createdAt->format(DateTime::ATOM), PDO::PARAM_STR);
+        $stmt->execute();
+    }
+
+    /**
+     * @param string $userId
+     * @param string $publicKey
+     *
+     * @return void
+     */
+    public function wgRemovePeer($userId, $publicKey)
+    {
+        $stmt = $this->db->prepare(
+            'DELETE FROM
+                wg_peers
+             WHERE
+                user_id = :user_id
+             AND
+                public_key = :public_key'
+        );
+
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
+        $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
+        $stmt->execute();
+    }
+
+    /**
+     * @param string $userId
+     *
+     * @return array<array{public_key:string,created_at:\DateTime}>
+     */
+    public function wgGetPeers($userId)
+    {
+        $stmt = $this->db->prepare(
+            'SELECT
+                public_key,
+                created_at
+             FROM wg_peers
+             WHERE
+                user_id = :user_id'
+        );
+
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
+        $stmt->execute();
+
+        $wgPeers = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
+            $wgPeers[] = [
+                'public_key' => (string) $resultRow['public_key'],
+                'created_at' => new DateTime($resultRow['created_at']),
+            ];
+        }
+
+        return $wgPeers;
     }
 
     /**

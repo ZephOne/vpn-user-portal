@@ -8,28 +8,28 @@
 
 <?php if (0 !== count($wgPeers)): ?>
 <h2>Existing</h2>
-<p class="warning">
-Currently this lists all configurations, also ones that do not belong to you.
-Sorry about that :-)
-</p>
 <table class="tbl">
     <thead>
         <tr>
             <th><?= $this->t('Public Key'); ?></th>
             <th><?= $this->t('IP Address'); ?></th>
+            <th><?= $this->t('Created At'); ?>(<?=$this->e(date('T')); ?>)</th>
             <th><?= $this->t('Actions'); ?></th>
         </tr>
     </thead>
     <tbody>
 <?php foreach ($wgPeers as $peerInfo): ?>
     <tr>
-        <td><?= $this->e($peerInfo['PublicKey']); ?></td>
+        <td><span title="<?= $this->e($peerInfo['PublicKey']); ?>"><?= $this->etr($peerInfo['PublicKey'], 15); ?></span></td>
         <td>
             <ul>
 <?php foreach ($peerInfo['AllowedIPs'] as $allowedIp): ?>
                 <li><?= $this->e($allowedIp); ?></li>
 <?php endforeach; ?>
             </ul>
+        </td>
+        <td>
+            <?= $this->d($peerInfo['CreatedAt']->format(DateTime::ATOM)); ?>
         </td>
         <td>
             <form class="frm" method="post" action="wireguard_remove_peer">
