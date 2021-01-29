@@ -11,6 +11,7 @@ namespace LC\Portal;
 
 use DateTime;
 use LC\Common\Config;
+use LC\Common\Http\Exception\HttpException;
 use LC\Common\Http\HtmlResponse;
 use LC\Common\Http\RedirectResponse;
 use LC\Common\Http\Request;
@@ -24,6 +25,7 @@ class WgModule implements ServiceModuleInterface
 {
     /** @var \DateTime */
     protected $dateTime;
+
     /** @var \LC\Common\Config */
     private $config;
 
@@ -104,29 +106,10 @@ class WgModule implements ServiceModuleInterface
 
                 $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
                 $wgInfo = Json::decode($httpResponse->getBody());
-
-                $minIndex = 1;
-                if (\array_key_exists('Peers', $wgInfo)) {
-                    // we have some peer(s)
-                    foreach ($wgInfo['Peers'] as $peerInfo) {
-                        foreach ($peerInfo['AllowedIPs'] as $allowedIp) {
-                            if (false !== strpos($allowedIp, '.')) {
-                                // IPv4
-                                list(, , , $i) = explode('.', $allowedIp);
-                                $i = (int) $i;
-                                if ($i > $minIndex) {
-                                    $minIndex = $i;
-                                }
-                            }
-                        }
-                    }
+                if (null === $ipInfo = self::getIpAddress($wgInfo)) {
+                    throw new HttpException('IP pool exhausted', 500);
                 }
-
-                // XXX do not overflow, max 254
-                $ipFour = '10.10.10.'.($minIndex + 1);
-                // XXX convert to hex
-                $ipSix = 'fd00:1234:1234:1234::'.dechex($minIndex + 1);
-
+                list($ipFour, $ipSix) = $ipInfo;
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::getPublicKey($privateKey);
                 $wgHost = $request->getServerName();
@@ -194,6 +177,35 @@ EOF;
                 return new RedirectResponse($request->getRootUri().'wireguard');
             }
         );
+    }
+
+    /**
+     * @return array{0:string,1:string}|null
+     */
+    public static function getIpAddress(array $wgInfo)
+    {
+        $allocatedIpList = [];
+        if (\array_key_exists('Peers', $wgInfo)) {
+            // we have some peer(s)
+            foreach ($wgInfo['Peers'] as $peerInfo) {
+                foreach ($peerInfo['AllowedIPs'] as $allowedIp) {
+                    if (false !== strpos($allowedIp, '.')) {
+                        list(, , , $i) = explode('.', $allowedIp);
+                        $allocatedIpList[] = (int) $i;
+                    }
+                }
+            }
+        }
+
+        for ($i = 2; $i <= 254; ++$i) {
+            if (!\in_array($i, $allocatedIpList, true)) {
+                // got one!
+                return ['10.10.10.'.$i, 'fd00:1234:1234:1234::'.dechex($i)];
+            }
+        }
+
+        // no IP available
+        return null;
     }
 
     /**
