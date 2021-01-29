@@ -17,6 +17,7 @@ Sorry about that :-)
         <tr>
             <th><?= $this->t('Public Key'); ?></th>
             <th><?= $this->t('IP Address'); ?></th>
+            <th><?= $this->t('Actions'); ?></th>
         </tr>
     </thead>
     <tbody>
@@ -29,6 +30,12 @@ Sorry about that :-)
                 <li><?= $this->e($allowedIp); ?></li>
 <?php endforeach; ?>
             </ul>
+        </td>
+        <td>
+            <form class="frm" method="post" action="wireguard_remove_peer">
+                <input type="hidden" name="PublicKey" value="<?= $this->e($peerInfo['PublicKey']); ?>">
+                <button type="submit">Remove</button>
+            </form>
         </td>
     </tr>
 <?php endforeach; ?>

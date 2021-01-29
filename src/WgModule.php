@@ -11,6 +11,7 @@ namespace LC\Portal;
 
 use LC\Common\Config;
 use LC\Common\Http\HtmlResponse;
+use LC\Common\Http\RedirectResponse;
 use LC\Common\Http\Request;
 use LC\Common\Http\Service;
 use LC\Common\Http\ServiceModuleInterface;
@@ -126,6 +127,24 @@ EOF;
                         ]
                     )
                 );
+            }
+        );
+
+        $service->post(
+            '/wireguard_remove_peer',
+            /**
+             * @return \LC\Common\Http\Response
+             */
+            function (Request $request, array $hookData) {
+                $publicKey = $request->requirePostParameter('PublicKey');
+                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey)]);
+                $httpResponse = $this->httpClient->postRaw(
+                    $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/remove_peer',
+                    [],
+                    $rawPostData
+                );
+
+                return new RedirectResponse($request->getRootUri().'wireguard');
             }
         );
     }
