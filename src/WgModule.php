@@ -74,6 +74,7 @@ class WgModule implements ServiceModuleInterface
                 foreach ($userPeers as $userPeer) {
                     $myPeers[$userPeer['public_key']] = [
                         'CreatedAt' => $userPeer['created_at'],
+                        'DisplayName' => $userPeer['display_name'],
                         'PublicKey' => $userPeer['public_key'],
                     ];
                 }
@@ -103,6 +104,9 @@ class WgModule implements ServiceModuleInterface
             function (Request $request, array $hookData) {
                 /** @var \LC\Common\Http\UserInfo */
                 $userInfo = $hookData['auth'];
+
+                // XXX verify input
+                $displayName = $request->requirePostParameter('DisplayName');
 
                 $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
                 $wgInfo = Json::decode($httpResponse->getBody());
@@ -139,7 +143,7 @@ EOF;
                     $rawPostData
                 );
 
-                $this->storage->wgAddPeer($userInfo->getUserId(), $publicKey, $this->dateTime);
+                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $this->dateTime);
 
                 return new HtmlResponse(
                     $this->tpl->render(

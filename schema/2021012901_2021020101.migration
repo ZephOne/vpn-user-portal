@@ -1,0 +1,4 @@
+ALTER TABLE wg_peers RENAME TO _wg_peers;
+CREATE TABLE wg_peers (user_id VARCHAR(255) NOT NULL, display_name VARCHAR(255) NOT NULL, public_key VARCHAR(255) NOT NULL, created_at VARCHAR(255) NOT NULL, UNIQUE(public_key));
+INSERT INTO wg_peers (user_id, display_name, public_key, created_at) SELECT user_id, "Default", public_key, created_at FROM _wg_peers;
+DROP TABLE _wg_peers;

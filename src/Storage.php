@@ -19,7 +19,7 @@ use PDO;
 
 class Storage implements CredentialValidatorInterface, StorageInterface
 {
-    const CURRENT_SCHEMA_VERSION = '2021012901';
+    const CURRENT_SCHEMA_VERSION = '2021020101';
 
     /** @var \PDO */
     private $db;
@@ -268,26 +268,30 @@ class Storage implements CredentialValidatorInterface, StorageInterface
 
     /**
      * @param string $userId
+     * @param string $displayName
      * @param string $publicKey
      *
      * @return void
      */
-    public function wgAddPeer($userId, $publicKey, DateTime $createdAt)
+    public function wgAddPeer($userId, $displayName, $publicKey, DateTime $createdAt)
     {
         $stmt = $this->db->prepare(
             'INSERT INTO wg_peers (
                 user_id,
+                display_name,
                 public_key,
                 created_at
              )
              VALUES(
                 :user_id,
+                :display_name,
                 :public_key,
                 :created_at
              )'
         );
 
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
+        $stmt->bindValue(':display_name', $displayName, PDO::PARAM_STR);
         $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
         $stmt->bindValue(':created_at', $createdAt->format(DateTime::ATOM), PDO::PARAM_STR);
         $stmt->execute();
@@ -318,12 +322,13 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     /**
      * @param string $userId
      *
-     * @return array<array{public_key:string,created_at:\DateTime}>
+     * @return array<array{display_name:string,public_key:string,created_at:\DateTime}>
      */
     public function wgGetPeers($userId)
     {
         $stmt = $this->db->prepare(
             'SELECT
+                display_name,
                 public_key,
                 created_at
              FROM wg_peers
@@ -337,6 +342,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $wgPeers = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
             $wgPeers[] = [
+                'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
                 'created_at' => new DateTime($resultRow['created_at']),
             ];

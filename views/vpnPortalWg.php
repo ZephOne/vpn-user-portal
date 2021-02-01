@@ -2,8 +2,19 @@
 <?php $this->start('content'); ?>
 
 <h2>Create</h2>
-<form class="frm" method="post">
-   <button type="submit">Create</button>
+<p>
+<?=$this->t('Manually create and download a WireGuard configuration file for use in your WireGuard client.'); ?>
+<?=$this->t('Choose a name, e.g. "Phone".'); ?>
+</p>
+
+<form method="post" class="frm">
+    <fieldset>
+        <label for="displayName"><?=$this->t('Name'); ?></label>
+        <input type="text" name="DisplayName" id="displayName" size="32" maxlength="64" placeholder="<?=$this->t('Name'); ?>" autofocus required>
+    </fieldset>
+    <fieldset>
+        <button type="submit"><?=$this->t('Create'); ?></button>
+    </fieldset>
 </form>
 
 <?php if (0 !== count($wgPeers)): ?>
@@ -11,16 +22,16 @@
 <table class="tbl">
     <thead>
         <tr>
-            <th><?= $this->t('Public Key'); ?></th>
+            <th><?= $this->t('Name'); ?></th>
             <th><?= $this->t('IP Address'); ?></th>
             <th><?= $this->t('Created At'); ?> (<?=$this->e(date('T')); ?>)</th>
-            <th><?= $this->t('Actions'); ?></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
 <?php foreach ($wgPeers as $peerInfo): ?>
     <tr>
-        <td><span title="<?= $this->e($peerInfo['PublicKey']); ?>"><?= $this->etr($peerInfo['PublicKey'], 15); ?></span></td>
+        <td><span title="<?= $this->e($peerInfo['PublicKey']); ?>"><?= $this->e($peerInfo['DisplayName']); ?></span></td>
         <td>
             <ul>
 <?php foreach ($peerInfo['AllowedIPs'] as $allowedIp): ?>
