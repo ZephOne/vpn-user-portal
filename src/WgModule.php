@@ -143,7 +143,7 @@ EOF;
                     $rawPostData
                 );
 
-                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $this->dateTime);
+                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $this->dateTime, null);
 
                 return new HtmlResponse(
                     $this->tpl->render(

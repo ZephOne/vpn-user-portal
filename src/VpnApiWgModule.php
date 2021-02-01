@@ -69,11 +69,7 @@ class VpnApiWgModule implements ServiceModuleInterface
                 $accessTokenInfo = $hookData['auth'];
                 $userId = $accessTokenInfo->getUserId();
                 $clientId = $accessTokenInfo->getClientId();
-                // for now we use the clientId as displayName, but later we
-                // introduce proper client_id storage in the wg_peers table
-                $displayName = $clientId;
                 $publicKey = $request->requirePostParameter('publicKey');
-
                 $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
                 $wgInfo = Json::decode($httpResponse->getBody());
                 if (null === $ipInfo = WgModule::getIpAddress($wgInfo)) {
@@ -107,7 +103,7 @@ EOF;
                     $rawPostData
                 );
 
-                $this->storage->wgAddPeer($userId, $displayName, $publicKey, $this->dateTime);
+                $this->storage->wgAddPeer($userId, $clientId, $publicKey, $this->dateTime, $clientId);
 
                 $response = new Response(200, 'text/plain');
                 $response->setBody($wgConfig);

@@ -19,7 +19,7 @@ use PDO;
 
 class Storage implements CredentialValidatorInterface, StorageInterface
 {
-    const CURRENT_SCHEMA_VERSION = '2021020101';
+    const CURRENT_SCHEMA_VERSION = '2021020102';
 
     /** @var \PDO */
     private $db;
@@ -267,26 +267,29 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     }
 
     /**
-     * @param string $userId
-     * @param string $displayName
-     * @param string $publicKey
+     * @param string      $userId
+     * @param string      $displayName
+     * @param string      $publicKey
+     * @param string|null $clientId
      *
      * @return void
      */
-    public function wgAddPeer($userId, $displayName, $publicKey, DateTime $createdAt)
+    public function wgAddPeer($userId, $displayName, $publicKey, DateTime $createdAt, $clientId)
     {
         $stmt = $this->db->prepare(
             'INSERT INTO wg_peers (
                 user_id,
                 display_name,
                 public_key,
-                created_at
+                created_at,
+                client_id
              )
              VALUES(
                 :user_id,
                 :display_name,
                 :public_key,
-                :created_at
+                :created_at,
+                :client_id
              )'
         );
 
@@ -294,6 +297,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $stmt->bindValue(':display_name', $displayName, PDO::PARAM_STR);
         $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
         $stmt->bindValue(':created_at', $createdAt->format(DateTime::ATOM), PDO::PARAM_STR);
+        $stmt->bindValue(':client_id', $clientId, PDO::PARAM_STR | PDO::PARAM_NULL);
         $stmt->execute();
     }
 
@@ -322,7 +326,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     /**
      * @param string $userId
      *
-     * @return array<array{display_name:string,public_key:string,created_at:\DateTime}>
+     * @return array<array{display_name:string,public_key:string,created_at:\DateTime,client_id:string|null}>
      */
     public function wgGetPeers($userId)
     {
@@ -330,7 +334,8 @@ class Storage implements CredentialValidatorInterface, StorageInterface
             'SELECT
                 display_name,
                 public_key,
-                created_at
+                created_at,
+                client_id
              FROM wg_peers
              WHERE
                 user_id = :user_id'
@@ -345,6 +350,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
                 'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
                 'created_at' => new DateTime($resultRow['created_at']),
+                'client_id' => null === $resultRow['client_id'] ? null : (string) $resultRow['client_id'],
             ];
         }
 
