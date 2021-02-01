@@ -1,7 +1,7 @@
 <?php
 $menuItems = [];
 $menuItems['home'] = $this->t('Home');
-$menuItems['configurations'] = $this->t('Configurations');
+$menuItems['openvpn'] = $this->t('OpenVPN');
 if ($enableWg) {
     $menuItems['wireguard'] = $this->t('WireGuard');
 }

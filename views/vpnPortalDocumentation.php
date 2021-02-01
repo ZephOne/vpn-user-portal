@@ -7,7 +7,7 @@
 
     <ol>
         <li>Choose and download a VPN application from the list below;</li>
-        <li>Load the configuration file, obtained <a href="configurations">here</a>, in
+        <li>Load the configuration file, obtained <a href="openvpn">here</a>, in
             the application.</li>
     </ol>
 
