@@ -115,13 +115,14 @@ class Wg
     }
 
     /**
-     * @param mixed $ipAddressPrefix
+     * @param string $ipAddressPrefix
      *
      * @return array<string>
      */
     private static function getIpInRangeList($ipAddressPrefix)
     {
         list($ipAddress, $ipPrefix) = explode('/', $ipAddressPrefix);
+        $ipPrefix = (int) $ipPrefix;
         $ipNetmask = long2ip(-1 << (32 - $ipPrefix));
         $ipNetwork = long2ip(ip2long($ipAddress) & ip2long($ipNetmask));
         $numberOfHosts = (int) 2 ** (32 - $ipPrefix) - 2;
@@ -158,10 +159,12 @@ class Wg
             if (!\in_array($ipInRange.'/32', $allocatedIpList, true)) {
                 // include this IPv4 address in IPv6 address
                 list($ipSixAddress, $ipSixPrefix) = explode('/', $this->config->requireString('rangeSix'));
+                $ipSixPrefix = (int) $ipSixPrefix;
+
                 $ipFourHex = bin2hex(inet_pton($ipInRange));
                 $ipSixHex = bin2hex(inet_pton($ipSixAddress));
                 // clear the last $ipSixPrefix/4 elements
-                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', $ipSixPrefix / 4), -($ipSixPrefix / 4));
+                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', (int) ($ipSixPrefix / 4)), -((int) ($ipSixPrefix / 4)));
                 $ipSixHex = substr_replace($ipSixHex, $ipFourHex, -8);
                 $ipSix = inet_ntop(hex2bin($ipSixHex));
 
