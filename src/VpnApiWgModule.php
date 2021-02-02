@@ -16,8 +16,6 @@ use LC\Common\Http\Request;
 use LC\Common\Http\Response;
 use LC\Common\Http\Service;
 use LC\Common\Http\ServiceModuleInterface;
-use LC\Common\HttpClient\HttpClientInterface;
-use LC\Common\Json;
 
 class VpnApiWgModule implements ServiceModuleInterface
 {
@@ -27,17 +25,17 @@ class VpnApiWgModule implements ServiceModuleInterface
     /** @var \LC\Common\Config */
     private $config;
 
+    /** @var Wg */
+    private $wg;
+
     /** @var \LC\Portal\Storage */
     private $storage;
 
-    /** @var \LC\Common\HttpClient\HttpClientInterface */
-    private $httpClient;
-
-    public function __construct(Config $config, Storage $storage, HttpClientInterface $httpClient)
+    public function __construct(Config $config, Wg $wg, Storage $storage)
     {
         $this->config = $config;
+        $this->wg = $wg;
         $this->storage = $storage;
-        $this->httpClient = $httpClient;
         $this->dateTime = new DateTime();
     }
 
@@ -69,44 +67,16 @@ class VpnApiWgModule implements ServiceModuleInterface
                 $accessTokenInfo = $hookData['auth'];
                 $userId = $accessTokenInfo->getUserId();
                 $clientId = $accessTokenInfo->getClientId();
+
+                // XXX validate input
                 $publicKey = $request->requirePostParameter('publicKey');
-                $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
-                $wgInfo = Json::decode($httpResponse->getBody());
-                if (null === $ipInfo = WgModule::getIpAddress($wgInfo)) {
+
+                if (null === $wgConfig = $this->wg->addPeer($publicKey)) {
                     throw new HttpException('IP pool exhausted', 500);
                 }
-                list($ipFour, $ipSix) = $ipInfo;
-
-                $wgHost = $request->getServerName();
-                $serverPublicKey = $wgInfo['PublicKey'];
-                $listenPort = $wgInfo['ListenPort'];
-                // XXX make DNS optional
-                $dnsIpList = implode(', ', $this->config->requireArray('dns', ['9.9.9.9', '2620:fe::fe']));
-                $wgConfig = <<< EOF
-[Peer]
-PublicKey = $serverPublicKey
-AllowedIPs = 0.0.0.0/0, ::/0
-Endpoint = $wgHost:$listenPort
-
-[Interface]
-Address = $ipFour/24, $ipSix/64
-DNS = $dnsIpList
-EOF;
-                // make sure IP is still available
-                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour.'/32'), 'AllowedIPs='.urlencode($ipSix.'/128')]);
-
-                // XXX catch errors
-                // XXX make sure WG "backend" is in sync with local DB (somehow)
-                $httpResponse = $this->httpClient->postRaw(
-                    $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
-                    [],
-                    $rawPostData
-                );
-
                 $this->storage->wgAddPeer($userId, $clientId, $publicKey, $this->dateTime, $clientId);
-
                 $response = new Response(200, 'text/plain');
-                $response->setBody($wgConfig);
+                $response->setBody((string) $wgConfig);
 
                 return $response;
             }
@@ -122,18 +92,12 @@ EOF;
                 $accessTokenInfo = $hookData['auth'];
                 $userId = $accessTokenInfo->getUserId();
 
+                // XXX validate input
                 $publicKey = $request->requirePostParameter('publicKey');
-                $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey)]);
-
-                // XXX catch errors
-                // XXX make sure WG "backend" is in sync with local DB (somehow)
-                $httpResponse = $this->httpClient->postRaw(
-                    $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/remove_peer',
-                    [],
-                    $rawPostData
-                );
 
                 $this->storage->wgRemovePeer($userId, $publicKey);
+                // XXX make sure this peer is ours first
+                $this->wg->removePeer($publicKey);
 
                 return new Response(204);
             }

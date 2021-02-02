@@ -25,6 +25,7 @@ use LC\Portal\OAuth\BearerValidator;
 use LC\Portal\Storage;
 use LC\Portal\VpnApiModule;
 use LC\Portal\VpnApiWgModule;
+use LC\Portal\Wg;
 
 $logger = new Logger('vpn-user-api');
 
@@ -89,7 +90,11 @@ try {
     $service->addModule($vpnApiModule);
 
     if ($config->requireBool('enableWg', false)) {
-        $vpnApiWgModule = new VpnApiWgModule($config->s('WgConfig'), $storage, new CurlHttpClient());
+        $vpnApiWgModule = new VpnApiWgModule(
+            $config->s('WgConfig'),
+            new Wg($config->s('WgConfig'), new CurlHttpClient()),
+            $storage
+        );
         $service->addModule($vpnApiWgModule);
     }
 
