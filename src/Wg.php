@@ -48,7 +48,7 @@ class Wg
     public function addPeer($publicKey)
     {
         $wgInfo = $this->getInfo();
-        if (null === $ipInfo = self::getIpAddress($wgInfo)) {
+        if (null === $ipInfo = $this->getIpAddress($wgInfo)) {
             // unable to get new IP address to assign to peer
             return null;
         }
@@ -115,9 +115,31 @@ class Wg
     }
 
     /**
+     * @param mixed $ipAddressPrefix
+     *
+     * @return array<string>
+     */
+    private static function getIpInRangeList($ipAddressPrefix)
+    {
+        list($ipAddress, $ipPrefix) = explode('/', $ipAddressPrefix);
+        $ipNetmask = long2ip(-1 << (32 - $ipPrefix));
+        $ipNetwork = long2ip(ip2long($ipAddress) & ip2long($ipNetmask));
+        $numberOfHosts = (int) 2 ** (32 - $ipPrefix) - 2;
+        if ($ipPrefix > 30) {
+            return [];
+        }
+        $hostList = [];
+        for ($i = 2; $i <= $numberOfHosts; ++$i) {
+            $hostList[] = long2ip(ip2long($ipNetwork) + $i);
+        }
+
+        return $hostList;
+    }
+
+    /**
      * @return array{0:string,1:string}|null
      */
-    private static function getIpAddress(array $wgInfo)
+    private function getIpAddress(array $wgInfo)
     {
         $allocatedIpList = [];
         if (\array_key_exists('Peers', $wgInfo)) {
@@ -125,21 +147,28 @@ class Wg
             foreach ($wgInfo['Peers'] as $peerInfo) {
                 foreach ($peerInfo['AllowedIPs'] as $allowedIp) {
                     if (false !== strpos($allowedIp, '.')) {
-                        list(, , , $i) = explode('.', $allowedIp);
-                        $allocatedIpList[] = (int) $i;
+                        $allocatedIpList[] = $allowedIp;
                     }
                 }
             }
         }
 
-        for ($i = 2; $i <= 254; ++$i) {
-            if (!\in_array($i, $allocatedIpList, true)) {
-                // got one!
-                return ['10.10.10.'.$i, 'fd00:1234:1234:1234::'.dechex($i)];
+        $ipInRangeList = self::getIpInRangeList($this->config->requireString('rangeFour'));
+        foreach ($ipInRangeList as $ipInRange) {
+            if (!\in_array($ipInRange.'/32', $allocatedIpList, true)) {
+                // include this IPv4 address in IPv6 address
+                list($ipSixAddress, $ipSixPrefix) = explode('/', $this->config->requireString('rangeSix'));
+                $ipFourHex = bin2hex(inet_pton($ipInRange));
+                $ipSixHex = bin2hex(inet_pton($ipSixAddress));
+                // clear the last $ipSixPrefix/4 elements
+                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', $ipSixPrefix / 4), -($ipSixPrefix / 4));
+                $ipSixHex = substr_replace($ipSixHex, $ipFourHex, -8);
+                $ipSix = inet_ntop(hex2bin($ipSixHex));
+
+                return [$ipInRange, $ipSix];
             }
         }
 
-        // no IP available
         return null;
     }
 
