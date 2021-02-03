@@ -53,7 +53,7 @@ class Wg
             return null;
         }
         list($ipFour, $ipSix) = $ipInfo;
-        $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour.'/32'), 'AllowedIPs='.urlencode($ipSix.'/128')]);
+        $rawPostData = implode('&', ['Device='.$this->config->requireString('wgDevice'), 'PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour.'/32'), 'AllowedIPs='.urlencode($ipSix.'/128')]);
         // XXX catch errors
         $httpResponse = $this->httpClient->postRaw(
             $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
@@ -80,7 +80,7 @@ class Wg
      */
     public function removePeer($publicKey)
     {
-        $rawPostData = implode('&', ['PublicKey='.urlencode($publicKey)]);
+        $rawPostData = implode('&', ['Device='.$this->config->requireString('wgDevice'), 'PublicKey='.urlencode($publicKey)]);
 
         // XXX catch errors
         $httpResponse = $this->httpClient->postRaw(
@@ -182,7 +182,7 @@ class Wg
     {
         // XXX catch errors
         // XXX make sure WG "backend" is in sync with local DB (somehow)
-        $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', [], []);
+        $httpResponse = $this->httpClient->get($this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/info', ['Device' => $this->config->requireString('wgDevice')], []);
 
         return Json::decode($httpResponse->getBody());
     }
