@@ -76,6 +76,8 @@ class WgConfig
         $output[] = 'PublicKey = '.$this->serverPublicKey;
         $output[] = 'AllowedIPs = 0.0.0.0/0, ::/0';
         $output[] = 'Endpoint = '.$this->hostName.':'.(string) $this->listenPort;
+        // client is probably behind NAT, so try to keep the connection alive
+        $output[] = 'PersistentKeepalive = 25';
 
         return implode(PHP_EOL, $output);
     }
