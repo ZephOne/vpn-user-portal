@@ -43,7 +43,7 @@
         </td>
         <td>
             <form class="frm" method="post" action="wireguard_remove_peer">
-                <input type="hidden" name="PublicKey" value="<?= $this->e($peerInfo['PublicKey']); ?>">
+                <input type="hidden" name="PublicKey" value="<?= $this->e($peerInfo['public_key']); ?>">
                 <button type="submit">Remove</button>
             </form>
         </td>

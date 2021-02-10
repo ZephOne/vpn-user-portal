@@ -92,7 +92,7 @@ class WgModule implements ServiceModuleInterface
                 // store peer in the DB
                 $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $ipFour, $ipSix, $this->dateTime, null);
 
-                // inform WG about it
+                // add peer to WG
                 if (null === $wgConfig = $this->wg->addPeer($publicKey, $ipFour, $ipSix)) {
                     throw new HttpException('unable to add peer', 500);
                 }
@@ -123,8 +123,11 @@ class WgModule implements ServiceModuleInterface
                 // XXX validate input
                 $publicKey = $request->requirePostParameter('PublicKey');
 
+                // remove peer from DB
                 $this->storage->wgRemovePeer($userInfo->getUserId(), $publicKey);
-                // XXX make sure this peer is ours first
+
+                // XXX make sure this peer is ours first!
+                // remove peer from WG
                 $this->wg->removePeer($publicKey);
 
                 return new RedirectResponse($request->getRootUri().'wireguard');
