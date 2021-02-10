@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS wg_peers (
     user_id VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
-    public_key VARCHAR(255) NOT NULL,
+    public_key VARCHAR(255) NOT NULL UNIQUE,
+    ip_four VARCHAR(255) NOT NULL UNIQUE,
+    ip_six VARCHAR(255) NOT NULL UNIQUE,
     created_at VARCHAR(255) NOT NULL,
     client_id VARCHAR(255) DEFAULT NULL,
     UNIQUE(public_key)

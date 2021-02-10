@@ -19,7 +19,7 @@ use PDO;
 
 class Storage implements CredentialValidatorInterface, StorageInterface
 {
-    const CURRENT_SCHEMA_VERSION = '2021020102';
+    const CURRENT_SCHEMA_VERSION = '2021021001';
 
     /** @var \PDO */
     private $db;
@@ -270,17 +270,21 @@ class Storage implements CredentialValidatorInterface, StorageInterface
      * @param string      $userId
      * @param string      $displayName
      * @param string      $publicKey
+     * @param string      $ipFour
+     * @param string      $ipSix
      * @param string|null $clientId
      *
      * @return void
      */
-    public function wgAddPeer($userId, $displayName, $publicKey, DateTime $createdAt, $clientId)
+    public function wgAddPeer($userId, $displayName, $publicKey, $ipFour, $ipSix, DateTime $createdAt, $clientId)
     {
         $stmt = $this->db->prepare(
             'INSERT INTO wg_peers (
                 user_id,
                 display_name,
                 public_key,
+                ip_four,
+                ip_six,
                 created_at,
                 client_id
              )
@@ -288,6 +292,8 @@ class Storage implements CredentialValidatorInterface, StorageInterface
                 :user_id,
                 :display_name,
                 :public_key,
+                :ip_four,
+                :ip_six,
                 :created_at,
                 :client_id
              )'
@@ -296,6 +302,8 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
         $stmt->bindValue(':display_name', $displayName, PDO::PARAM_STR);
         $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
+        $stmt->bindValue(':ip_four', $ipFour, PDO::PARAM_STR);
+        $stmt->bindValue(':ip_six', $ipSix, PDO::PARAM_STR);
         $stmt->bindValue(':created_at', $createdAt->format(DateTime::ATOM), PDO::PARAM_STR);
         $stmt->bindValue(':client_id', $clientId, PDO::PARAM_STR | PDO::PARAM_NULL);
         $stmt->execute();
@@ -324,6 +332,21 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     }
 
     /**
+     * @return array<string>
+     */
+    public function wgGetAllocatedIpFourAddresses()
+    {
+        $stmt = $this->db->prepare(
+            'SELECT
+                ip_four
+             FROM wg_peers'
+        );
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
      * @param string $userId
      *
      * @return array<array{display_name:string,public_key:string,created_at:\DateTime,client_id:string|null}>
@@ -334,6 +357,8 @@ class Storage implements CredentialValidatorInterface, StorageInterface
             'SELECT
                 display_name,
                 public_key,
+                ip_four,
+                ip_six,
                 created_at,
                 client_id
              FROM wg_peers
@@ -349,6 +374,8 @@ class Storage implements CredentialValidatorInterface, StorageInterface
             $wgPeers[] = [
                 'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
+                'ip_four' => (string) $resultRow['ip_four'],
+                'ip_six' => (string) $resultRow['ip_six'],
                 'created_at' => new DateTime($resultRow['created_at']),
                 'client_id' => null === $resultRow['client_id'] ? null : (string) $resultRow['client_id'],
             ];

@@ -70,11 +70,15 @@ class VpnApiWgModule implements ServiceModuleInterface
 
                 // XXX validate input
                 $publicKey = $request->requirePostParameter('publicKey');
-
-                if (null === $wgConfig = $this->wg->addPeer($publicKey)) {
-                    throw new HttpException('IP pool exhausted', 500);
+                if (null === $ipInfo = $this->getIpAddress()) {
+                    // unable to get new IP address to assign to peer
+                    throw new HttpException('unable to get a an IP address', 500);
                 }
-                $this->storage->wgAddPeer($userId, $clientId, $publicKey, $this->dateTime, $clientId);
+                list($ipFour, $ipSix) = $ipInfo;
+                if (null === $wgConfig = $this->wg->addPeer($publicKey, $ipFour, $ipSix)) {
+                    throw new HttpException('unable to add peer', 500);
+                }
+                $this->storage->wgAddPeer($userId, $clientId, $publicKey, $ipFour, $ipSix, $this->dateTime, $clientId);
                 $response = new Response(200, 'text/plain');
                 $response->setBody((string) $wgConfig);
 
@@ -102,5 +106,56 @@ class VpnApiWgModule implements ServiceModuleInterface
                 return new Response(204);
             }
         );
+    }
+
+    /**
+     * @param string $ipAddressPrefix
+     *
+     * @return array<string>
+     */
+    private static function getIpInRangeList($ipAddressPrefix)
+    {
+        list($ipAddress, $ipPrefix) = explode('/', $ipAddressPrefix);
+        $ipPrefix = (int) $ipPrefix;
+        $ipNetmask = long2ip(-1 << (32 - $ipPrefix));
+        $ipNetwork = long2ip(ip2long($ipAddress) & ip2long($ipNetmask));
+        $numberOfHosts = (int) 2 ** (32 - $ipPrefix) - 2;
+        if ($ipPrefix > 30) {
+            return [];
+        }
+        $hostList = [];
+        for ($i = 2; $i <= $numberOfHosts; ++$i) {
+            $hostList[] = long2ip(ip2long($ipNetwork) + $i);
+        }
+
+        return $hostList;
+    }
+
+    /**
+     * @return array{0:string,1:string}|null
+     */
+    private function getIpAddress()
+    {
+        // make a list of all allocated IPv4 addresses (the IPv6 address is
+        // based on the IPv4 address)
+        $allocatedIpFourList = $this->storage->wgGetAllocatedIpFourAddresses();
+        $ipInRangeList = self::getIpInRangeList($this->config->requireString('rangeFour'));
+        foreach ($ipInRangeList as $ipInRange) {
+            if (!\in_array($ipInRange, $allocatedIpFourList, true)) {
+                // include this IPv4 address in IPv6 address
+                list($ipSixAddress, $ipSixPrefix) = explode('/', $this->config->requireString('rangeSix'));
+                $ipSixPrefix = (int) $ipSixPrefix;
+                $ipFourHex = bin2hex(inet_pton($ipInRange));
+                $ipSixHex = bin2hex(inet_pton($ipSixAddress));
+                // clear the last $ipSixPrefix/4 elements
+                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', (int) ($ipSixPrefix / 4)), -((int) ($ipSixPrefix / 4)));
+                $ipSixHex = substr_replace($ipSixHex, $ipFourHex, -8);
+                $ipSix = inet_ntop(hex2bin($ipSixHex));
+
+                return [$ipInRange, $ipSix];
+            }
+        }
+
+        return null;
     }
 }

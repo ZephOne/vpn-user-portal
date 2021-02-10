@@ -31,16 +31,15 @@
     <tbody>
 <?php foreach ($wgPeers as $peerInfo): ?>
     <tr>
-        <td><span title="<?= $this->e($peerInfo['PublicKey']); ?>"><?= $this->e($peerInfo['DisplayName']); ?></span></td>
+        <td><span title="<?= $this->e($peerInfo['public_key']); ?>"><?= $this->e($peerInfo['display_name']); ?></span></td>
         <td>
             <ul>
-<?php foreach ($peerInfo['AllowedIPs'] as $allowedIp): ?>
-                <li><?= $this->e($allowedIp); ?></li>
-<?php endforeach; ?>
+                <li><?= $this->e($peerInfo['ip_four']); ?></li>
+                <li><?= $this->e($peerInfo['ip_six']); ?></li>
             </ul>
         </td>
         <td>
-            <?= $this->d($peerInfo['CreatedAt']->format(DateTime::ATOM)); ?>
+            <?= $this->d($peerInfo['created_at']->format(DateTime::ATOM)); ?>
         </td>
         <td>
             <form class="frm" method="post" action="wireguard_remove_peer">

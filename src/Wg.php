@@ -42,18 +42,24 @@ class Wg
 
     /**
      * @param string $publicKey
+     * @param string $ipFour
+     * @param string $ipSix
      *
      * @return WgConfig|null
      */
-    public function addPeer($publicKey)
+    public function addPeer($publicKey, $ipFour, $ipSix)
     {
         $wgInfo = $this->getInfo();
-        if (null === $ipInfo = $this->getIpAddress($wgInfo)) {
-            // unable to get new IP address to assign to peer
-            return null;
-        }
-        list($ipFour, $ipSix) = $ipInfo;
-        $rawPostData = implode('&', ['Device='.$this->config->requireString('wgDevice'), 'PublicKey='.urlencode($publicKey), 'AllowedIPs='.urlencode($ipFour.'/32'), 'AllowedIPs='.urlencode($ipSix.'/128')]);
+        $rawPostData = implode(
+            '&',
+            [
+                'Device='.$this->config->requireString('wgDevice'),
+                'PublicKey='.urlencode($publicKey),
+                'AllowedIPs='.urlencode($ipFour.'/32'),
+                'AllowedIPs='.urlencode($ipSix.'/128'),
+            ]
+        );
+
         // XXX catch errors
         $httpResponse = $this->httpClient->postRaw(
             $this->config->requireString('wgDaemonUrl', 'http://localhost:8080').'/add_peer',
@@ -88,91 +94,6 @@ class Wg
             [],
             $rawPostData
         );
-    }
-
-    /**
-     * @return string
-     */
-    public static function generatePrivateKey()
-    {
-        ob_start();
-        passthru('/usr/bin/wg genkey');
-
-        return trim(ob_get_clean());
-    }
-
-    /**
-     * @param string $privateKey
-     *
-     * @return string
-     */
-    public static function generatePublicKey($privateKey)
-    {
-        ob_start();
-        passthru("echo $privateKey | /usr/bin/wg pubkey");
-
-        return trim(ob_get_clean());
-    }
-
-    /**
-     * @param string $ipAddressPrefix
-     *
-     * @return array<string>
-     */
-    private static function getIpInRangeList($ipAddressPrefix)
-    {
-        list($ipAddress, $ipPrefix) = explode('/', $ipAddressPrefix);
-        $ipPrefix = (int) $ipPrefix;
-        $ipNetmask = long2ip(-1 << (32 - $ipPrefix));
-        $ipNetwork = long2ip(ip2long($ipAddress) & ip2long($ipNetmask));
-        $numberOfHosts = (int) 2 ** (32 - $ipPrefix) - 2;
-        if ($ipPrefix > 30) {
-            return [];
-        }
-        $hostList = [];
-        for ($i = 2; $i <= $numberOfHosts; ++$i) {
-            $hostList[] = long2ip(ip2long($ipNetwork) + $i);
-        }
-
-        return $hostList;
-    }
-
-    /**
-     * @return array{0:string,1:string}|null
-     */
-    private function getIpAddress(array $wgInfo)
-    {
-        $allocatedIpList = [];
-        if (\array_key_exists('Peers', $wgInfo)) {
-            // we have some peer(s)
-            foreach ($wgInfo['Peers'] as $peerInfo) {
-                foreach ($peerInfo['AllowedIPs'] as $allowedIp) {
-                    if (false !== strpos($allowedIp, '.')) {
-                        $allocatedIpList[] = $allowedIp;
-                    }
-                }
-            }
-        }
-
-        $ipInRangeList = self::getIpInRangeList($this->config->requireString('rangeFour'));
-        foreach ($ipInRangeList as $ipInRange) {
-            if (!\in_array($ipInRange.'/32', $allocatedIpList, true)) {
-                // include this IPv4 address in IPv6 address
-                list($ipSixAddress, $ipSixPrefix) = explode('/', $this->config->requireString('rangeSix'));
-                $ipSixPrefix = (int) $ipSixPrefix;
-
-                $ipFourHex = bin2hex(inet_pton($ipInRange));
-                $ipSixHex = bin2hex(inet_pton($ipSixAddress));
-                // clear the last $ipSixPrefix/4 elements
-                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', (int) ($ipSixPrefix / 4)), -((int) ($ipSixPrefix / 4)));
-                $ipSixHex = substr_replace($ipSixHex, $ipFourHex, -8);
-                $ipSix = inet_ntop(hex2bin($ipSixHex));
-
-                return [$ipInRange, $ipSix];
-            }
-        }
-
-        return null;
     }
 
     /**

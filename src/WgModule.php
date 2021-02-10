@@ -59,32 +59,11 @@ class WgModule implements ServiceModuleInterface
                 /** @var \LC\Common\Http\UserInfo */
                 $userInfo = $hookData['auth'];
 
-                // get all WG peers
-                $wgPeers = $this->wg->getPeers();
-                // get *my* WG peers
-                $userPeers = $this->storage->wgGetPeers($userInfo->getUserId());
-
-                // filter out *my* WG peers from the list of all WG peers
-                $myPeers = [];
-                foreach ($userPeers as $userPeer) {
-                    $myPeers[$userPeer['public_key']] = [
-                        'CreatedAt' => $userPeer['created_at'],
-                        'DisplayName' => $userPeer['display_name'],
-                        'PublicKey' => $userPeer['public_key'],
-                    ];
-                }
-
-                foreach ($wgPeers as $wgPeer) {
-                    if (\array_key_exists($wgPeer['PublicKey'], $myPeers)) {
-                        $myPeers[$wgPeer['PublicKey']]['AllowedIPs'] = $wgPeer['AllowedIPs'];
-                    }
-                }
-
                 return new HtmlResponse(
                     $this->tpl->render(
                         'vpnPortalWg',
                         [
-                            'wgPeers' => array_values($myPeers),
+                            'wgPeers' => $this->storage->wgGetPeers($userInfo->getUserId()),
                         ]
                     )
                 );
@@ -102,15 +81,24 @@ class WgModule implements ServiceModuleInterface
                 // XXX verify input
                 $displayName = $request->requirePostParameter('DisplayName');
 
-                $privateKey = Wg::generatePrivateKey();
-                $publicKey = Wg::generatePublicKey($privateKey);
-                if (null === $wgConfig = $this->wg->addPeer($publicKey)) {
+                $privateKey = self::generatePrivateKey();
+                $publicKey = self::generatePublicKey($privateKey);
+                if (null === $ipInfo = $this->getIpAddress()) {
+                    // unable to get new IP address to assign to peer
                     throw new HttpException('unable to get a an IP address', 500);
+                }
+                list($ipFour, $ipSix) = $ipInfo;
+
+                // store peer in the DB
+                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $ipFour, $ipSix, $this->dateTime, null);
+
+                // inform WG about it
+                if (null === $wgConfig = $this->wg->addPeer($publicKey, $ipFour, $ipSix)) {
+                    throw new HttpException('unable to add peer', 500);
                 }
                 // as we generate a private key on the server, add it to the
                 // configuration we got back
                 $wgConfig->setPrivateKey($privateKey);
-                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $this->dateTime, null);
 
                 return new HtmlResponse(
                     $this->tpl->render(
@@ -142,5 +130,80 @@ class WgModule implements ServiceModuleInterface
                 return new RedirectResponse($request->getRootUri().'wireguard');
             }
         );
+    }
+
+    /**
+     * @return string
+     */
+    private static function generatePrivateKey()
+    {
+        ob_start();
+        passthru('/usr/bin/wg genkey');
+
+        return trim(ob_get_clean());
+    }
+
+    /**
+     * @param string $privateKey
+     *
+     * @return string
+     */
+    private static function generatePublicKey($privateKey)
+    {
+        ob_start();
+        passthru("echo $privateKey | /usr/bin/wg pubkey");
+
+        return trim(ob_get_clean());
+    }
+
+    /**
+     * @param string $ipAddressPrefix
+     *
+     * @return array<string>
+     */
+    private static function getIpInRangeList($ipAddressPrefix)
+    {
+        list($ipAddress, $ipPrefix) = explode('/', $ipAddressPrefix);
+        $ipPrefix = (int) $ipPrefix;
+        $ipNetmask = long2ip(-1 << (32 - $ipPrefix));
+        $ipNetwork = long2ip(ip2long($ipAddress) & ip2long($ipNetmask));
+        $numberOfHosts = (int) 2 ** (32 - $ipPrefix) - 2;
+        if ($ipPrefix > 30) {
+            return [];
+        }
+        $hostList = [];
+        for ($i = 2; $i <= $numberOfHosts; ++$i) {
+            $hostList[] = long2ip(ip2long($ipNetwork) + $i);
+        }
+
+        return $hostList;
+    }
+
+    /**
+     * @return array{0:string,1:string}|null
+     */
+    private function getIpAddress()
+    {
+        // make a list of all allocated IPv4 addresses (the IPv6 address is
+        // based on the IPv4 address)
+        $allocatedIpFourList = $this->storage->wgGetAllocatedIpFourAddresses();
+        $ipInRangeList = self::getIpInRangeList($this->config->requireString('rangeFour'));
+        foreach ($ipInRangeList as $ipInRange) {
+            if (!\in_array($ipInRange, $allocatedIpFourList, true)) {
+                // include this IPv4 address in IPv6 address
+                list($ipSixAddress, $ipSixPrefix) = explode('/', $this->config->requireString('rangeSix'));
+                $ipSixPrefix = (int) $ipSixPrefix;
+                $ipFourHex = bin2hex(inet_pton($ipInRange));
+                $ipSixHex = bin2hex(inet_pton($ipSixAddress));
+                // clear the last $ipSixPrefix/4 elements
+                $ipSixHex = substr_replace($ipSixHex, str_repeat('0', (int) ($ipSixPrefix / 4)), -((int) ($ipSixPrefix / 4)));
+                $ipSixHex = substr_replace($ipSixHex, $ipFourHex, -8);
+                $ipSix = inet_ntop(hex2bin($ipSixHex));
+
+                return [$ipInRange, $ipSix];
+            }
+        }
+
+        return null;
     }
 }
