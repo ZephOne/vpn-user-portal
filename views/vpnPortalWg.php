@@ -22,6 +22,7 @@
 <table class="tbl">
     <thead>
         <tr>
+            <th></th>
             <th><?= $this->t('Name'); ?></th>
             <th><?= $this->t('IP Address'); ?></th>
             <th><?= $this->t('Created At'); ?> (<?=$this->e(date('T')); ?>)</th>
@@ -31,6 +32,11 @@
     <tbody>
 <?php foreach ($wgPeers as $peerInfo): ?>
     <tr>
+<?php if ($peerInfo['is_online']): ?>
+        <td title="<?=$this->t('Online'); ?>">🟢</td>
+<?php else: ?>
+        <td title="<?=$this->t('Offline'); ?>">🔴</td>
+<?php endif; ?>
         <td><span title="<?= $this->e($peerInfo['public_key']); ?>"><?= $this->e($peerInfo['display_name']); ?></span></td>
         <td>
             <ul>

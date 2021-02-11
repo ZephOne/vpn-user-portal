@@ -59,11 +59,38 @@ class WgModule implements ServiceModuleInterface
                 /** @var \LC\Common\Http\UserInfo */
                 $userInfo = $hookData['auth'];
 
+                // get the list of this user's peers from the database
+                $userPeers = $this->storage->wgGetPeers($userInfo->getUserId());
+
+                // we also ask WireGuard for a list of peers to determine
+                // whether this user's peers are online or not
+                // XXX make sure they have a "key" that is the publicKey so we
+                // can easily find public keys
+                $wgPeers = $this->wg->getPeers();
+
+                $wgPeerList = [];
+                foreach ($wgPeers as $wgPeer) {
+                    $wgPeerList[$wgPeer['PublicKey']] = $wgPeer;
+                }
+
+                foreach ($userPeers as $k => $userPeer) {
+                    $isOnline = false;
+                    $publicKey = $userPeer['public_key'];
+                    if (\array_key_exists($publicKey, $wgPeerList)) {
+                        // seen <= 25 seconds ago?
+                        $currentTime = $this->dateTime->getTimestamp();
+                        $peerLastHandshakeTime = new DateTime($wgPeerList[$publicKey]['LastHandshakeTime']);
+                        $isOnline = ($peerLastHandshakeTime->getTimestamp()) + 25 >= $currentTime;
+                    }
+                    $userPeer['is_online'] = $isOnline;
+                    $userPeers[$k] = $userPeer;
+                }
+
                 return new HtmlResponse(
                     $this->tpl->render(
                         'vpnPortalWg',
                         [
-                            'wgPeers' => $this->storage->wgGetPeers($userInfo->getUserId()),
+                            'wgPeers' => $userPeers,
                         ]
                     )
                 );
