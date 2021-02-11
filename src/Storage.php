@@ -349,7 +349,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     /**
      * @param string $userId
      *
-     * @return array<array{display_name:string,public_key:string,created_at:\DateTime,client_id:string|null}>
+     * @return array<array{display_name:string,public_key:string,ip_four:string,ip_six:string,created_at:\DateTime,client_id:string|null}>
      */
     public function wgGetPeers($userId)
     {
@@ -372,6 +372,40 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $wgPeers = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
             $wgPeers[] = [
+                'display_name' => (string) $resultRow['display_name'],
+                'public_key' => (string) $resultRow['public_key'],
+                'ip_four' => (string) $resultRow['ip_four'],
+                'ip_six' => (string) $resultRow['ip_six'],
+                'created_at' => new DateTime($resultRow['created_at']),
+                'client_id' => null === $resultRow['client_id'] ? null : (string) $resultRow['client_id'],
+            ];
+        }
+
+        return $wgPeers;
+    }
+
+    /**
+     * @return array<array{display_name:string,public_key:string,ip_four:string,ip_six:string,created_at:\DateTime,client_id:string|null}>
+     */
+    public function wgGetAllPeers()
+    {
+        $stmt = $this->db->prepare(
+            'SELECT
+                user_id,
+                display_name,
+                public_key,
+                ip_four,
+                ip_six,
+                created_at,
+                client_id
+             FROM wg_peers'
+        );
+
+        $stmt->execute();
+        $wgPeers = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
+            $wgPeers[] = [
+                'user_id' => (string) $resultRow['user_id'],
                 'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
                 'ip_four' => (string) $resultRow['ip_four'],

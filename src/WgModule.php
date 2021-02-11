@@ -100,6 +100,18 @@ class WgModule implements ServiceModuleInterface
         );
 
         $service->post(
+            '/add_all_peers',
+            /**
+             * @return \LC\Common\Http\Response
+             */
+            function (Request $request, array $hookData) {
+                $this->addAllPeers();
+
+                return new RedirectResponse($request->getRootUri().'wireguard');
+            }
+        );
+
+        $service->post(
             '/wireguard',
             /**
              * @return \LC\Common\Http\Response
@@ -162,6 +174,16 @@ class WgModule implements ServiceModuleInterface
                 return new RedirectResponse($request->getRootUri().'wireguard');
             }
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function addAllPeers()
+    {
+        foreach ($this->storage->wgGetAllPeers() as $peerInfo) {
+            $this->wg->addPeer($peerInfo['public_key'], $peerInfo['ip_four'], $peerInfo['ip_six']);
+        }
     }
 
     /**

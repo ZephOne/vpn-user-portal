@@ -1,6 +1,15 @@
 <?php $this->layout('base', ['activeItem' => 'wireguard', 'pageTitle' => $this->t('WireGuard')]); ?>
 <?php $this->start('content'); ?>
 
+<p>
+<strong>DEBUG</strong>: (re)add all peers to the running WireGuard, for example after reboot when they
+get lost. This will be automated in the future.
+</p>
+
+<form method="post" class="frm" action="add_all_peers">
+    <button type="submit">Add All Peers</button>
+</form>
+
 <h2>Create</h2>
 <p>
 <?=$this->t('Manually create and download a WireGuard configuration file for use in your WireGuard client.'); ?>
