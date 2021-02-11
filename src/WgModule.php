@@ -77,10 +77,12 @@ class WgModule implements ServiceModuleInterface
                     $isOnline = false;
                     $publicKey = $userPeer['public_key'];
                     if (\array_key_exists($publicKey, $wgPeerList)) {
-                        // seen <= 25 seconds ago?
+                        // handshare occurs every 3 minutes, so when a peer
+                        // didn't perform a handshare > 3 minutes ago, we
+                        // consider them offline
                         $currentTime = $this->dateTime->getTimestamp();
                         $peerLastHandshakeTime = new DateTime($wgPeerList[$publicKey]['LastHandshakeTime']);
-                        $isOnline = ($peerLastHandshakeTime->getTimestamp()) + 25 >= $currentTime;
+                        $isOnline = ($peerLastHandshakeTime->getTimestamp() + 180) >= $currentTime;
                     }
                     $userPeer['is_online'] = $isOnline;
                     $userPeers[$k] = $userPeer;
