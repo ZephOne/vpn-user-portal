@@ -39,7 +39,7 @@ try {
         new Tpl([], [], '')
     );
 
-    $wgModule->addAllPeers();
+    $wgModule->syncPeers();
 } catch (Exception $e) {
     echo sprintf('ERROR: %s', $e->getMessage()).PHP_EOL;
     exit(1);

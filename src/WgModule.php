@@ -100,18 +100,6 @@ class WgModule implements ServiceModuleInterface
         );
 
         $service->post(
-            '/add_all_peers',
-            /**
-             * @return \LC\Common\Http\Response
-             */
-            function (Request $request, array $hookData) {
-                $this->addAllPeers();
-
-                return new RedirectResponse($request->getRootUri().'wireguard');
-            }
-        );
-
-        $service->post(
             '/wireguard',
             /**
              * @return \LC\Common\Http\Response
@@ -177,14 +165,18 @@ class WgModule implements ServiceModuleInterface
     }
 
     /**
-     * XXX rename to "syncPeers()" or something.
+     * Very inefficient way to register all peers (again) with WG. This is only
+     * done for peers that are not using the API as we assume that API users
+     * we perform the right API calls to add/remove their config.
      *
      * @return void
      */
-    public function addAllPeers()
+    public function syncPeers()
     {
         foreach ($this->storage->wgGetAllPeers() as $peerInfo) {
-            $this->wg->addPeer($peerInfo['public_key'], $peerInfo['ip_four'], $peerInfo['ip_six']);
+            if (null === $peerInfo['client_id']) {
+                $this->wg->addPeer($peerInfo['public_key'], $peerInfo['ip_four'], $peerInfo['ip_six']);
+            }
         }
     }
 
