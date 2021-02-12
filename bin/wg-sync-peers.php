@@ -23,23 +23,24 @@ use LC\Portal\WgModule;
 try {
     $configFile = sprintf('%s/config/config.php', $baseDir);
     $config = Config::fromFile($configFile);
-    $dataDir = sprintf('%s/data', $baseDir);
+    if ($config->requireBool('enableWg', false)) {
+        $dataDir = sprintf('%s/data', $baseDir);
+        $storage = new Storage(
+            new PDO(sprintf('sqlite://%s/db.sqlite', $dataDir)),
+            sprintf('%s/schema', $baseDir),
+            new DateInterval('P90D')    // XXX code smell, not needed here!
+        );
 
-    $storage = new Storage(
-        new PDO(sprintf('sqlite://%s/db.sqlite', $dataDir)),
-        sprintf('%s/schema', $baseDir),
-        new DateInterval('P90D')    // XXX code smell, not needed here!
-    );
+        // XXX we should not be needing Tpl here
+        $wgModule = new WgModule(
+            $config->s('WgConfig'),
+            new Wg($config->s('WgConfig'), new CurlHttpClient()),
+            $storage,
+            new Tpl([], [], '')
+        );
 
-    // XXX we should not be needing Tpl here
-    $wgModule = new WgModule(
-        $config->s('WgConfig'),
-        new Wg($config->s('WgConfig'), new CurlHttpClient()),
-        $storage,
-        new Tpl([], [], '')
-    );
-
-    $wgModule->syncPeers();
+        $wgModule->syncPeers();
+    }
 } catch (Exception $e) {
     echo sprintf('ERROR: %s', $e->getMessage()).PHP_EOL;
     exit(1);
