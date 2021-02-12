@@ -318,10 +318,9 @@ try {
     );
     $service->addModule($vpnPortalModule);
 
+    $enableWg = false;
     if ($config->requireBool('enableWg', false)) {
-        $tpl->addDefault(
-            ['enableWg' => true]
-        );
+        $enableWg = true;
         $wgModule = new WgModule(
             $config->s('WgConfig'),
             new Wg($config->s('WgConfig'), new CurlHttpClient()),
@@ -330,6 +329,7 @@ try {
         );
         $service->addModule($wgModule);
     }
+    $tpl->addDefault(['enableWg' => $enableWg]);
 
     $adminPortalModule = new AdminPortalModule(
         $tpl,
