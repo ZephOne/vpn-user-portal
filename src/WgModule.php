@@ -177,6 +177,8 @@ class WgModule implements ServiceModuleInterface
     }
 
     /**
+     * XXX rename to "syncPeers()" or something.
+     *
      * @return void
      */
     public function addAllPeers()
