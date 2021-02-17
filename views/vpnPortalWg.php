@@ -3,7 +3,7 @@
 <h2>Create</h2>
 <p>
 <?=$this->t('Manually create and download a WireGuard configuration file for use in your WireGuard client.'); ?>
-<?=$this->t('Choose a name, e.g. "Phone".'); ?>
+<?=$this->t('Select a profile and choose a name, e.g. "Phone".'); ?>
 </p>
 
 <form method="post" class="frm">
