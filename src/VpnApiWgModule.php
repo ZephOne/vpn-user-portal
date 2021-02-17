@@ -69,6 +69,12 @@ class VpnApiWgModule implements ServiceModuleInterface
                 $clientId = $accessTokenInfo->getClientId();
 
                 // XXX validate input
+                // XXX require profile_id from FORM post, verify user has
+                // permission
+                $profileId = 'default';
+                if (!\in_array($profileId, ['default'], true)) {
+                    throw new HttpException('invalid "ProfileId"', 400);
+                }
                 $publicKey = $request->requirePostParameter('publicKey');
                 if (null === $ipInfo = $this->getIpAddress()) {
                     // unable to get new IP address to assign to peer
@@ -78,7 +84,7 @@ class VpnApiWgModule implements ServiceModuleInterface
                 if (null === $wgConfig = $this->wg->addPeer($publicKey, $ipFour, $ipSix)) {
                     throw new HttpException('unable to add peer', 500);
                 }
-                $this->storage->wgAddPeer($userId, $clientId, $publicKey, $ipFour, $ipSix, $this->dateTime, $clientId);
+                $this->storage->wgAddPeer($userId, $profileId, $clientId, $publicKey, $ipFour, $ipSix, $this->dateTime, $clientId);
                 $response = new Response(200, 'text/plain');
                 $response->setBody((string) $wgConfig);
 

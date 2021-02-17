@@ -92,6 +92,11 @@ class WgModule implements ServiceModuleInterface
                     $this->tpl->render(
                         'vpnPortalWg',
                         [
+                            'wgProfileList' => [
+                                'default' => [
+                                    'displayName' => 'Default',
+                                ],
+                            ],
                             'wgPeers' => $userPeers,
                         ]
                     )
@@ -107,19 +112,27 @@ class WgModule implements ServiceModuleInterface
             function (Request $request, array $hookData) {
                 /** @var \LC\Common\Http\UserInfo */
                 $userInfo = $hookData['auth'];
-                // XXX verify input
+
+                // XXX take profiles from config
+                // XXX verify user has permission
+                $profileId = $request->requirePostParameter('ProfileId');
+                if (!\in_array($profileId, ['default'], true)) {
+                    throw new HttpException('invalid "ProfileId"', 400);
+                }
+
+                // XXX validate input
                 $displayName = $request->requirePostParameter('DisplayName');
 
                 $privateKey = self::generatePrivateKey();
                 $publicKey = self::generatePublicKey($privateKey);
-                if (null === $ipInfo = $this->getIpAddress()) {
+                if (null === $ipInfo = $this->getIpAddress($this->config->s('VpnProfiles')->s($profileId))) {
                     // unable to get new IP address to assign to peer
                     throw new HttpException('unable to get a an IP address', 500);
                 }
                 list($ipFour, $ipSix) = $ipInfo;
 
                 // store peer in the DB
-                $this->storage->wgAddPeer($userInfo->getUserId(), $displayName, $publicKey, $ipFour, $ipSix, $this->dateTime, null);
+                $this->storage->wgAddPeer($userInfo->getUserId(), $profileId, $displayName, $publicKey, $ipFour, $ipSix, $this->dateTime, null);
 
                 // add peer to WG
                 if (null === $wgConfig = $this->wg->addPeer($publicKey, $ipFour, $ipSix)) {

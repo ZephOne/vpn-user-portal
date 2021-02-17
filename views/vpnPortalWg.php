@@ -8,6 +8,12 @@
 
 <form method="post" class="frm">
     <fieldset>
+        <label for="profileId"><?=$this->t('Profile'); ?></label>
+        <select name="ProfileId" id="profileId" size="<?=count($wgProfileList); ?>" required>
+<?php foreach ($wgProfileList as $profileId => $profileData): ?>
+            <option value="<?=$this->e($profileId); ?>"><?=$this->e($profileData['displayName']); ?></option>
+<?php endforeach; ?>
+        </select>
         <label for="displayName"><?=$this->t('Name'); ?></label>
         <input type="text" name="DisplayName" id="displayName" size="32" maxlength="64" placeholder="<?=$this->t('Name'); ?>" autofocus required>
     </fieldset>

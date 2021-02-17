@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS wg_peers (
     user_id VARCHAR(255) NOT NULL,
+    profile_id VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
     public_key VARCHAR(255) NOT NULL UNIQUE,
     ip_four VARCHAR(255) NOT NULL UNIQUE,

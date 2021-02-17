@@ -19,7 +19,7 @@ use PDO;
 
 class Storage implements CredentialValidatorInterface, StorageInterface
 {
-    const CURRENT_SCHEMA_VERSION = '2021021001';
+    const CURRENT_SCHEMA_VERSION = '2021021601';
 
     /** @var \PDO */
     private $db;
@@ -268,6 +268,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
 
     /**
      * @param string      $userId
+     * @param string      $profileId
      * @param string      $displayName
      * @param string      $publicKey
      * @param string      $ipFour
@@ -276,11 +277,12 @@ class Storage implements CredentialValidatorInterface, StorageInterface
      *
      * @return void
      */
-    public function wgAddPeer($userId, $displayName, $publicKey, $ipFour, $ipSix, DateTime $createdAt, $clientId)
+    public function wgAddPeer($userId, $profileId, $displayName, $publicKey, $ipFour, $ipSix, DateTime $createdAt, $clientId)
     {
         $stmt = $this->db->prepare(
             'INSERT INTO wg_peers (
                 user_id,
+                profile_id,
                 display_name,
                 public_key,
                 ip_four,
@@ -290,6 +292,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
              )
              VALUES(
                 :user_id,
+                :profile_id,
                 :display_name,
                 :public_key,
                 :ip_four,
@@ -300,6 +303,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         );
 
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_STR);
+        $stmt->bindValue(':profile_id', $profileId, PDO::PARAM_STR);
         $stmt->bindValue(':display_name', $displayName, PDO::PARAM_STR);
         $stmt->bindValue(':public_key', $publicKey, PDO::PARAM_STR);
         $stmt->bindValue(':ip_four', $ipFour, PDO::PARAM_STR);
@@ -355,6 +359,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
     {
         $stmt = $this->db->prepare(
             'SELECT
+                profile_id,
                 display_name,
                 public_key,
                 ip_four,
@@ -372,6 +377,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $wgPeers = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
             $wgPeers[] = [
+                'profile_id' => (string) $resultRow['profile_id'],
                 'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
                 'ip_four' => (string) $resultRow['ip_four'],
@@ -392,6 +398,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         $stmt = $this->db->prepare(
             'SELECT
                 user_id,
+                profile_id,
                 display_name,
                 public_key,
                 ip_four,
@@ -406,6 +413,7 @@ class Storage implements CredentialValidatorInterface, StorageInterface
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultRow) {
             $wgPeers[] = [
                 'user_id' => (string) $resultRow['user_id'],
+                'profile_id' => (string) $resultRow['profile_id'],
                 'display_name' => (string) $resultRow['display_name'],
                 'public_key' => (string) $resultRow['public_key'],
                 'ip_four' => (string) $resultRow['ip_four'],
