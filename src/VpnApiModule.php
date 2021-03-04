@@ -79,6 +79,7 @@ class VpnApiModule implements ServiceModuleInterface
 
                     $userProfileList[] = [
                         'profile_id' => $profileId,
+                        'vpn_type' => $profileConfig->vpnType(),
                         'display_name' => $profileConfig->displayName(),
                         // 2FA is now decided by vpn-user-portal setting, so
                         // we "lie" here to the client
