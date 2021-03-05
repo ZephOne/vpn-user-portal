@@ -113,16 +113,6 @@ class VpnPortalModule implements ServiceModuleInterface
              * @return \LC\Common\Http\Response
              */
             function (Request $request, array $hookData) {
-                return new RedirectResponse($request->getRootUri().'openvpn', 302);
-            }
-        );
-
-        $service->get(
-            '/openvpn',
-            /**
-             * @return \LC\Common\Http\Response
-             */
-            function (Request $request, array $hookData) {
                 /** @var \LC\Common\Http\UserInfo */
                 $userInfo = $hookData['auth'];
 
@@ -159,7 +149,7 @@ class VpnPortalModule implements ServiceModuleInterface
         );
 
         $service->post(
-            '/openvpn',
+            '/configurations',
             /**
              * @return \LC\Common\Http\Response
              */
@@ -197,7 +187,7 @@ class VpnPortalModule implements ServiceModuleInterface
                 $this->serverClient->post('delete_client_certificate', ['common_name' => $commonName]);
                 $this->serverClient->post('kill_client', ['common_name' => $commonName]);
 
-                return new RedirectResponse($request->getRootUri().'openvpn', 302);
+                return new RedirectResponse($request->getRootUri().'configurations', 302);
             }
         );
 

@@ -24,8 +24,6 @@ use LC\Portal\ClientFetcher;
 use LC\Portal\OAuth\BearerValidator;
 use LC\Portal\Storage;
 use LC\Portal\VpnApiModule;
-use LC\Portal\VpnApiWgModule;
-use LC\Portal\Wg;
 
 $logger = new Logger('vpn-user-api');
 
@@ -88,16 +86,6 @@ try {
         new DateInterval($config->requireString('sessionExpiry', 'P90D'))
     );
     $service->addModule($vpnApiModule);
-
-    if ($config->requireBool('enableWg', false)) {
-        $vpnApiWgModule = new VpnApiWgModule(
-            $config->s('WgConfig'),
-            new Wg($config->s('WgConfig'), new CurlHttpClient()),
-            $storage
-        );
-        $service->addModule($vpnApiWgModule);
-    }
-
     $service->run($request)->send();
 } catch (Exception $e) {
     $logger->error($e->getMessage());

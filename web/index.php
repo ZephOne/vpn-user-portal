@@ -53,8 +53,6 @@ use LC\Portal\Tpl;
 use LC\Portal\TwoFactorEnrollModule;
 use LC\Portal\UpdateSessionInfoHook;
 use LC\Portal\VpnPortalModule;
-use LC\Portal\Wg;
-use LC\Portal\WgModule;
 
 $logger = new Logger('vpn-user-portal');
 
@@ -319,19 +317,6 @@ try {
         $clientFetcher
     );
     $service->addModule($vpnPortalModule);
-
-    $enableWg = false;
-    if ($config->requireBool('enableWg', false)) {
-        $enableWg = true;
-        $wgModule = new WgModule(
-            $config->s('WgConfig'),
-            new Wg($config->s('WgConfig'), new CurlHttpClient()),
-            $storage,
-            $tpl
-        );
-        $service->addModule($wgModule);
-    }
-    $tpl->addDefault(['enableWg' => $enableWg]);
 
     $adminPortalModule = new AdminPortalModule(
         $tpl,

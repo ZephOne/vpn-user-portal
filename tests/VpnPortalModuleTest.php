@@ -79,7 +79,7 @@ class VpnPortalModuleTest extends TestCase
             trim(file_get_contents(sprintf('%s/data/foo_MyConfig.ovpn', __DIR__))),
             $this->makeRequest(
                 'POST',
-                '/openvpn',
+                '/configurations',
                 [],
                 ['displayName' => 'MyConfig', 'profileId' => 'internet'],
                 true
@@ -137,7 +137,7 @@ class VpnPortalModuleTest extends TestCase
                     ],
                 ],
             ],
-            $this->makeRequest('GET', '/openvpn')
+            $this->makeRequest('GET', '/configurations')
         );
     }
 

@@ -1,10 +1,7 @@
 <?php
 $menuItems = [];
 $menuItems['home'] = $this->t('Home');
-$menuItems['openvpn'] = $this->t('OpenVPN');
-if ($enableWg) {
-    $menuItems['wireguard'] = $this->t('WireGuard');
-}
+$menuItems['configurations'] = $this->t('Configurations');
 $menuItems['account'] = $this->t('Account');
 $menuItems['documentation'] = $this->t('Documentation');
 if ($isAdmin) {
