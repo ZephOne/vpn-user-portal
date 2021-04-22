@@ -15,6 +15,7 @@ $baseDir = dirname(__DIR__);
 use fkooman\Jwt\Keys\EdDSA\SecretKey;
 use fkooman\SeCookie\Cookie;
 use fkooman\SeCookie\CookieOptions;
+use fkooman\SeCookie\MysqlSessionStorage;
 use fkooman\SeCookie\Session;
 use fkooman\SeCookie\SessionOptions;
 use LC\Portal\CA\VpnCa;
@@ -104,12 +105,22 @@ try {
                 ->withMaxAge(60 * 60 * 24 * 90)  // 90 days
         )
     );
+
+    $db = new PDO(
+        $config->s('Db')->requireString('dbDsn', 'sqlite://'.$baseDir.'/data/db.sqlite'),
+        $config->s('Db')->optionalString('dbUser'),
+        $config->s('Db')->optionalString('dbPass')
+    );
+    $storage = new Storage($db, $baseDir.'/schema');
+    $storage->update();
+
     $seSession = new SeSession(
         new Session(
             SessionOptions::init(),
             $cookieOptions
                 ->withPath($request->getRoot())
-                ->withSameSiteLax()
+                ->withSameSiteLax(),
+            'mysql' === $config->requireString('sessionStorage', 'file') ? new MysqlSessionStorage($db) : null
         )
     );
 
@@ -137,16 +148,6 @@ try {
     ];
 
     $tpl->addDefault($templateDefaults);
-
-    $storage = new Storage(
-        new PDO(
-            $config->s('Db')->requireString('dbDsn', 'sqlite://'.$baseDir.'/data/db.sqlite'),
-            $config->s('Db')->optionalString('dbUser'),
-            $config->s('Db')->optionalString('dbPass')
-        ),
-        $baseDir.'/schema'
-    );
-    $storage->update();
 
     $service = new Service();
     $service->addBeforeHook(new CsrfProtectionHook());

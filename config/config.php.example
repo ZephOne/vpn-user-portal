@@ -33,6 +33,11 @@ return [
 //        'dbUser' => 'user',
 //        'dbPass' => 'pass',
 //    ],
+
+    // where to store the session
+    // DEFAULT: file
+    //'sessionStorage' => 'file',
+    //'sessionStorage' => 'mysql',
     
 
 //    // LDAP
